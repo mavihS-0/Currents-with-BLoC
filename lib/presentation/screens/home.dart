@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:currents_with_bloc/data/constants.dart';
+import 'package:currents_with_bloc/data/models/article_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
@@ -9,6 +11,7 @@ import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
+import '../../bloc/news_data_bloc.dart';
 import '../../data/secret_key.dart';
 import 'details.dart';
 
@@ -21,69 +24,51 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  //declaring variable
-  String selectedCountry = 'null';
-  String search = 'null';
-  List <dynamic> articles = [];
-
-
-  //api service to get the articles
-  void getArticles() async {
-    //dialog to show loading while waiting for response
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context)=> Center(child: SpinKitThreeBounce(
-        size: 30,
-        color: DarkShade,
-      )),
-    );
-
-    //setting url based on search and selected country's values
-    var url = selectedCountry!='null' && search != 'null' ?
-    Uri.https('newsapi.org','/v2/everything',{'q': '$search+$selectedCountry','apiKey':myApiKey,'sortBy':'publishedAt'}) :
-    search == 'null' ? selectedCountry!='null' ?Uri.https('newsapi.org','/v2/everything',{'q': selectedCountry,'apiKey':myApiKey,'sortBy':'publishedAt'}) :
-    Uri.https('newsapi.org','/v2/everything',{'q': 'world','apiKey':myApiKey,'sortBy':'publishedAt'}) :
-    Uri.https('newsapi.org','/v2/everything',{'q': search,'apiKey':myApiKey,'sortBy':'publishedAt'});
-
-
-    var response = await get(url);
-    if(response.statusCode==200){
-      var jsonResponse =jsonDecode(response.body) as Map <String, dynamic>;
-      articles = jsonResponse['articles'];
-    }
-    else{
-      //displaying error message
-      Get.snackbar('Error', 'Request failed with error code ${response.statusCode}');
-    }
-    Get.back();
-    setState(() {
-
-    });
-  }
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-
-    //calling api service on initial build
-    Future.delayed(Duration.zero, () {
-      getArticles();
-    });  }
+    context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: null));
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-        child: Scaffold(
+        child: BlocConsumer<NewsDataBloc, NewsDataState>(
+  listener: (context, state) {
+    // TODO: implement listener
+    if(state is NewsDataFetchFailure){
+      Get.snackbar("Error", state.error);
+    }
+    else if(state is NewsDataInitial){
+      context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: null));
+    }
+    else if(state is NewsDataLoading){
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context)=> Center(child: SpinKitThreeBounce(
+          size: 30,
+          color: DarkShade,
+        )),
+      );
+    }
+  },
+  builder: (context, state) {
+    if(state is! NewsDataFetchSuccess){
+      return Scaffold(
+        backgroundColor: BgColor,
+      );
+    }
+    return Scaffold(
           backgroundColor: BgColor,
           body: SingleChildScrollView(
             physics: BouncingScrollPhysics(),
             //widget to reload the api service
             child: LiquidPullToRefresh(
-              onRefresh: () async {
-                getArticles();
-                return Future(() => null);},
+              onRefresh: () async{
+                context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: null));
+                },
               showChildOpacityTransition: false,
               backgroundColor: LightShade,
               child: Container(
@@ -113,10 +98,9 @@ class _HomePageState extends State<HomePage> {
                             color: TextColor,
                             fontSize: MediaQuery.of(context).size.height*0.02
                         ),
-                        onSubmitted: (value) async {
+                        onSubmitted: (value) {
                           //print(value);
-                          search= value;
-                          getArticles();
+                          context.read().add<NewsDataRequested>(NewsDataRequested(search: value,country: null));
                         },
                       ),
                     ),
@@ -138,6 +122,10 @@ class _HomePageState extends State<HomePage> {
                           padding: EdgeInsets.all(4),
                           height: MediaQuery.of(context).size.height*0.05,
                           width: MediaQuery.of(context).size.width*0.3,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            color: LightShade,
+                          ),
                           child: TextButton(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -158,9 +146,9 @@ class _HomePageState extends State<HomePage> {
                                       color: DarkShade,
                                     )),
                                   );
-                                  selectedCountry= await country.name;
+                                  String selectedCountry= await country.name;
                                   Get.back();
-                                  getArticles();
+                                  context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: selectedCountry));
                                 },
                                 countryListTheme: CountryListThemeData(
                                   borderRadius: BorderRadius.circular(30),
@@ -185,10 +173,6 @@ class _HomePageState extends State<HomePage> {
                             },
 
                           ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: LightShade,
-                          ),
                         ),
                       ],
                     ),
@@ -198,30 +182,35 @@ class _HomePageState extends State<HomePage> {
                       height: MediaQuery.of(context).size.height*0.68,
                       child: ListView.builder(
                         scrollDirection: Axis.vertical,
-                        itemCount: articles.length,
+                        itemCount: state.apiModel.totalResults,
                         shrinkWrap: true,
                         itemBuilder: (_,i){
+                          ArticleModel article = state.apiModel.articles[i];
                           return GestureDetector(
                             onTap: (){
                               //passing arguments to details page
-                              Get.to(()=>DetailsPage(),arguments: {
-                                'source_name' : articles[i]['source']['name'],
-                                'title' : articles[i]['title'],
-                                'author' : articles[i]['author'],
-                                'desc': articles[i]['description'],
-                                'image' : articles[i]['urlToImage'],
-                                'publishedAt' : articles[i]['publishedAt'],
-                                'content' : articles[i]['content'],
-                                'url' : articles[i]['url'],
-                              });
+                              // Get.to(()=>DetailsPage(),arguments: {
+                              //   'source_name' : articles[i]['source']['name'],
+                              //   'title' : articles[i]['title'],
+                              //   'author' : articles[i]['author'],
+                              //   'desc': articles[i]['description'],
+                              //   'image' : articles[i]['urlToImage'],
+                              //   'publishedAt' : articles[i]['publishedAt'],
+                              //   'content' : articles[i]['content'],
+                              //   'url' : articles[i]['url'],
+                              // });
                             },
                             child: Container(
-                              margin: EdgeInsets.only(bottom: 20),
-                              padding: EdgeInsets.all(10),
+                              margin: const EdgeInsets.only(bottom: 20),
+                              padding: const EdgeInsets.all(10),
                               height: MediaQuery.of(context).size.height*0.3,
                               width: MediaQuery.of(context).size.width,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: SuperLightShade,
+                              ),
                               //null check for image url
-                              child: articles[i]['urlToImage'] != null ? Column(
+                              child: article.urlToImage != null ? Column(
                                 children: [
                                   Container(
                                     height: MediaQuery.of(context).size.height*0.2,
@@ -229,7 +218,7 @@ class _HomePageState extends State<HomePage> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: Image.network(
-                                        articles[i]['urlToImage'],
+                                        article.urlToImage,
                                         fit: BoxFit.fill,
                                         loadingBuilder: (BuildContext context, Widget child,
                                             ImageChunkEvent? loadingProgress) {
@@ -263,7 +252,7 @@ class _HomePageState extends State<HomePage> {
                                   SizedBox(height: 10,),
                                   Container(
                                     height: MediaQuery.of(context).size.height*0.06,
-                                    child: AutoSizeText(articles[i]['title'],
+                                    child: AutoSizeText(article.title,
                                       //maxLines: 2,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -276,7 +265,7 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   Container(
                                     height: MediaQuery.of(context).size.height*0.1,
-                                    child: AutoSizeText(articles[i]['title'],
+                                    child: AutoSizeText(article.title,
                                       //maxLines: 3,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -285,16 +274,12 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   SizedBox(height: 20,),
                                   Container(
-                                    child: AutoSizeText(articles[i]['description'],
+                                    child: AutoSizeText(article.description,
                                       style: TextStyle(
                                         fontSize: 15,
                                       ),),
                                   ),
                                 ],
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: SuperLightShade,
                               ),
                             ),
                           );
@@ -307,7 +292,9 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-        )
+        );
+  },
+)
     );
   }
 }

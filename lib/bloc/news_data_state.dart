@@ -5,7 +5,11 @@ sealed class NewsDataState {}
 
 class NewsDataInitial extends NewsDataState {}
 
-class NewsDataFetchSuccess extends NewsDataState{}
+class NewsDataFetchSuccess extends NewsDataState{
+  final ApiModel apiModel;
+
+  NewsDataFetchSuccess(this.apiModel);
+}
 
 class NewsDataFetchFailure extends NewsDataState{
   final String error;
