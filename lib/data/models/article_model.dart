@@ -6,6 +6,7 @@ class ArticleModel{
   String? content;
   String? url;
   String? urlToImage;
+  String? sourceName;
 
   ArticleModel({
     required this.title,
@@ -15,5 +16,6 @@ class ArticleModel{
     required this.content,
     required this.url,
     required this.urlToImage,
+    required this.sourceName
   });
 }

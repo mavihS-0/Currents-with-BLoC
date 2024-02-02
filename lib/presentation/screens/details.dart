@@ -1,7 +1,10 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:currents_with_bloc/data/models/article_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../bloc/news_data_bloc.dart';
 import '../../data/constants.dart';
 
 class DetailsPage extends StatelessWidget {
@@ -9,6 +12,9 @@ class DetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<NewsDataBloc, NewsDataState>(
+  builder: (context, state) {
+    ArticleModel article = (state as NewsDataFetchSuccess).apiModel.articles[state.detailsPageArticleIndex!];
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -19,7 +25,7 @@ class DetailsPage extends StatelessWidget {
           onPressed: (){Get.back();},
         ),
         //setting article source as app bar title
-        title: Get.arguments['source_name'] != null ? Text(Get.arguments['source_name'],
+        title: article.sourceName != null ? Text(article.sourceName!,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             letterSpacing: 1.0,
@@ -32,7 +38,7 @@ class DetailsPage extends StatelessWidget {
           child: Stack(
             children: [
               Container(
-                height: Get.arguments['image'] != null ? MediaQuery.of(context).size.height*0.4 : 130,
+                height: article.urlToImage != null ? MediaQuery.of(context).size.height*0.4 : 130,
                 decoration: BoxDecoration(
                   //borderRadius: BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
                   color: SuperLightShade,
@@ -45,7 +51,7 @@ class DetailsPage extends StatelessWidget {
                   children: [
                     Container(
                       height: MediaQuery.of(context).size.height*0.057,
-                      child: AutoSizeText(Get.arguments['title'],
+                      child: AutoSizeText(article.title!,
                         maxLines: 2,
                         style: TextStyle(
                           fontSize: 20,
@@ -55,20 +61,20 @@ class DetailsPage extends StatelessWidget {
                     ),
                     SizedBox(height: 10,),
                     //null check for author
-                    Get.arguments['author'] != null ? Row(children: [
+                    article.author != null ? Row(children: [
                       Text('Author: ', style: TextStyle(fontWeight: FontWeight.bold),),
-                      Text(Get.arguments['author'])
+                      Text(article.author!)
                     ],) : SizedBox(height: 1,),
                     SizedBox(height: 10,),
                     //null check for image url
-                    Get.arguments['image'] != null ? Container(
+                    article.urlToImage != null ? Container(
                       margin: EdgeInsets.only(bottom: 10),
                       height: MediaQuery.of(context).size.height*0.24,
                       width: MediaQuery.of(context).size.width,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.network(
-                          Get.arguments['image'],
+                          article.urlToImage!,
                           fit: BoxFit.fill,
                           loadingBuilder: (BuildContext context, Widget child,
                               ImageChunkEvent? loadingProgress) {
@@ -101,18 +107,18 @@ class DetailsPage extends StatelessWidget {
                     ) : SizedBox(height: 1),
                     Row(children: [
                       Text('Published At: ', style: TextStyle(fontWeight: FontWeight.bold),),
-                      Text(Get.arguments['publishedAt'])
+                      Text(article.publishedAt!)
                     ],),
                     SizedBox(height: 20,),
-                    Text(Get.arguments['desc'],
+                    Text(article.description!,
                       style: TextStyle(
                         fontSize: 18,
                         fontStyle: FontStyle.italic,
                       ),),
                     SizedBox(height: 20,),
-                    Text(Get.arguments['content'].toString().length< 200 ?
-                    Get.arguments['content'] :
-                    Get.arguments['content'].toString().substring(0,200),
+                    Text(article.content.toString().length< 200 ?
+                    article.content! :
+                    article.content.toString().substring(0,200),
                       style: TextStyle(
                           fontSize: 17
                       ),),
@@ -123,7 +129,7 @@ class DetailsPage extends StatelessWidget {
                     TextButton(
                       //function to open default browser with the url
                       onPressed: ()async {
-                        String url = '${Get.arguments['url']}';
+                        String url = article.url!;
                         final uri = Uri.parse(url);
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
@@ -131,7 +137,7 @@ class DetailsPage extends StatelessWidget {
                           throw 'Could not launch $url';
                         }
                       },
-                      child: Text(Get.arguments['url'],
+                      child: Text(article.url!,
                         style: TextStyle(
                           color: Colors.blue[900],
                           decoration: TextDecoration.underline,
@@ -145,5 +151,7 @@ class DetailsPage extends StatelessWidget {
           )
       ),
     );
+  },
+);
   }
 }

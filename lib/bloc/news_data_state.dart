@@ -10,8 +10,9 @@ class NewsDataFetchSuccess extends NewsDataState{
   final int screenIndex;
   final String country;
   final String search;
+  final int? detailsPageArticleIndex;
 
-  NewsDataFetchSuccess({required this.apiModel, required this.screenIndex, required this.country, required this.search});
+  NewsDataFetchSuccess({required this.apiModel, required this.screenIndex, required this.country, required this.search, required this.detailsPageArticleIndex});
 }
 
 class NewsDataFetchFailure extends NewsDataState{

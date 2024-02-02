@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:currents_with_bloc/data/constants.dart';
 import 'package:currents_with_bloc/data/models/article_model.dart';
+import 'package:currents_with_bloc/presentation/screens/details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -30,11 +31,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-        child: BlocConsumer<NewsDataBloc, NewsDataState>(
-  listener: (context, state) {
-    // TODO: implement listener
-
-  },
+        child: BlocBuilder<NewsDataBloc, NewsDataState>(
   builder: (context, state) {
     if(state is NewsDataFetchFailure){
       return Scaffold(
@@ -50,7 +47,7 @@ class _HomePageState extends State<HomePage> {
             //widget to reload the api service
             child: LiquidPullToRefresh(
               onRefresh: () async{
-                context.read<NewsDataBloc>().add(NewsDataRequested(search: 'null',country: 'null', screenIndex: 0));
+                context.read<NewsDataBloc>().add(NewsDataRequested(search: state.search,country: state.country, screenIndex: 0));
                 },
               showChildOpacityTransition: false,
               backgroundColor: LightShade,
@@ -83,7 +80,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         onSubmitted: (value) {
                           //print(value);
-                          context.read().add<NewsDataRequested>(NewsDataRequested(search: value,country: 'null', screenIndex: 0));
+                          context.read<NewsDataBloc>().add(NewsDataRequested(search: value,country: 'null', screenIndex: 0));
                         },
                       ),
                     ),
@@ -131,7 +128,7 @@ class _HomePageState extends State<HomePage> {
                                   );
                                   String selectedCountry= await country.name;
                                   Get.back();
-                                  context.read().add<NewsDataRequested>(NewsDataRequested(search: 'null',country: selectedCountry, screenIndex: 0));
+                                  context.read<NewsDataBloc>().add(NewsDataRequested(search: 'null',country: selectedCountry, screenIndex: 0));
                                 },
                                 countryListTheme: CountryListThemeData(
                                   borderRadius: BorderRadius.circular(30),
@@ -171,17 +168,8 @@ class _HomePageState extends State<HomePage> {
                           ArticleModel article = state.apiModel.articles[i];
                           return GestureDetector(
                             onTap: (){
-                              //passing arguments to details page
-                              // Get.to(()=>DetailsPage(),arguments: {
-                              //   'source_name' : articles[i]['source']['name'],
-                              //   'title' : articles[i]['title'],
-                              //   'author' : articles[i]['author'],
-                              //   'desc': articles[i]['description'],
-                              //   'image' : articles[i]['urlToImage'],
-                              //   'publishedAt' : articles[i]['publishedAt'],
-                              //   'content' : articles[i]['content'],
-                              //   'url' : articles[i]['url'],
-                              // });
+                              context.read<NewsDataBloc>().add(DetailsPageRequested(articleIndex: i, apiModel: state.apiModel, country: state.country, search: state.search));
+                              Get.to(()=>const DetailsPage());
                             },
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 20),

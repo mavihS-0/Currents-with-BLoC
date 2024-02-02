@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/models/api_model.dart';
+import '../data/models/article_model.dart';
 import '../data/secret_key.dart';
 
 part 'news_data_event.dart';
@@ -14,10 +15,11 @@ class NewsDataBloc extends Bloc<NewsDataEvent, NewsDataState> {
   NewsDataBloc() : super(NewsDataInitial()) {
     on<NewsDataRequested>(_onNewsDataRequested);
     on<NavBarButtonPressed>(_onNavBarButtonPressed);
+    on<DetailsPageRequested>(_onDetailsPageRequested);
   }
 
   void _onNavBarButtonPressed(NavBarButtonPressed event, Emitter<NewsDataState>emit) {
-    return emit(NewsDataFetchSuccess(apiModel: event.apiModel, screenIndex: event.index, country: event.country, search: event.search));
+    return emit(NewsDataFetchSuccess(apiModel: event.apiModel, screenIndex: event.index, country: event.country, search: event.search, detailsPageArticleIndex: null));
   }
 
   Future<void> _onNewsDataRequested(NewsDataRequested event, Emitter<NewsDataState>emit) async {
@@ -29,11 +31,15 @@ class NewsDataBloc extends Bloc<NewsDataEvent, NewsDataState> {
       Uri.https('newsapi.org','/v2/everything',{'q': 'world','apiKey':myApiKey,'sortBy':'publishedAt'}) :
       Uri.https('newsapi.org','/v2/everything',{'q': event.search,'apiKey':myApiKey,'sortBy':'publishedAt'});
       ApiModel apiModel = await DataProvider().getArticles(url);
-      emit(NewsDataFetchSuccess(apiModel: apiModel, screenIndex: event.screenIndex, country: event.country, search: event.search));
+      emit(NewsDataFetchSuccess(apiModel: apiModel, screenIndex: event.screenIndex, country: event.country, search: event.search, detailsPageArticleIndex: null));
       return;
     }catch(e){
       return emit(NewsDataFetchFailure(e.toString()));
     }
+  }
+
+  void _onDetailsPageRequested(DetailsPageRequested event, Emitter<NewsDataState> emit){
+    emit(NewsDataFetchSuccess(apiModel: event.apiModel, screenIndex: 0, country: event.country, search: event.search, detailsPageArticleIndex: event.articleIndex));
   }
 
   @override

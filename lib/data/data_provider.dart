@@ -20,7 +20,8 @@ class DataProvider{
           content: element['content'],
           description: element['description'],
           url: element['url'],
-          urlToImage: element['urlToImage']
+          urlToImage: element['urlToImage'],
+            sourceName: element['source']['name']
         ));
       }
       apiModel.status = jsonResponse['status'];
