@@ -1,5 +1,5 @@
 import 'package:currents_with_bloc/presentation/screens/splashScreen.dart';
-import 'package:currents_with_bloc/test.dart';
+import 'package:currents_with_bloc/presentation/util/navBar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => NewsDataBloc(),
-      child: MaterialApp(
+      child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Currents',
         //declaring Theme Data
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
               .fontFamily,
         ),
         //splash screen when opening app
-        home: TestScreen(),
+        home: SplashPage(),
       ),
     );
   }

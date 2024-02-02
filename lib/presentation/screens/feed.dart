@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:currents_with_bloc/data/models/article_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:currents_with_bloc/data/constants.dart';
@@ -7,6 +9,8 @@ import 'package:get/get.dart';
 import 'package:http/http.dart';
 import 'package:liquid_swipe/liquid_swipe.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../bloc/news_data_bloc.dart';
 
 
 class FeedPage extends StatefulWidget {
@@ -19,50 +23,29 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage> {
 
   //initializing variables
-  late LiquidController liquidController;
-  List <dynamic> articles = [];
+  LiquidController liquidController = LiquidController();
+  List <ArticleModel> articles = [];
 
-  //Api  Service to get the articles
-  void getArticles() async {
-    //Loading dialog while waiting for response
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context)=> Center(child: SpinKitThreeBounce(
-        size: 30,
-        //backgroundColor: SuperLightShade,
-        color: DarkShade,
-      )),
-    );
-    var url =  Uri.https('newsapi.org','/v2/everything',{'q': 'world','apiKey':'10ab2d105d8d44598a99dc739d4ab7b7','sortBy':'publishedAt'});
-
-    var response = await get(url);
-    if(response.statusCode==200){
-      var jsonResponse =jsonDecode(response.body) as Map <String, dynamic>;
-      articles = jsonResponse['articles'];
-    }
-    else{
-      //Displaying error message
-      Get.snackbar('Error', 'Request failed with error code ${response.statusCode}');
-    }
-    Get.back();
-    setState(() {
-
-    });
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    liquidController = LiquidController();
-    super.initState();
-    //calling api service on initial build
-    Future.delayed(Duration.zero, () {
-      getArticles();
-    });
-  }
+  
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<NewsDataBloc, NewsDataState>(
+  listener: (context, state) {
+    // TODO: implement listener
+  },
+  builder: (context, state) {
+    if (state is! NewsDataFetchSuccess) {
+      return Scaffold(
+        body: Center(
+          child: SpinKitFadingCube(
+            color: Colors.blue,
+            size: 50.0,
+          ),
+        ),
+      );
+    }
+    articles = (state as NewsDataFetchSuccess).apiModel.articles;
+    int totalResults = (state as NewsDataFetchSuccess).apiModel.totalResults;
     return Scaffold(
       backgroundColor: BgColor,
       appBar: AppBar(
@@ -77,8 +60,8 @@ class _FeedPageState extends State<FeedPage> {
         backgroundColor: SuperLightShade,
       ),
       //Display a sized box of height 1 if articles.length ==0 to avoid null error
-      body: articles.length != 0 ? LiquidSwipe.builder(
-        itemCount: articles.length,
+      body: totalResults != 0 ? LiquidSwipe.builder(
+        itemCount: totalResults,
         waveType: WaveType.liquidReveal,
         liquidController: liquidController,
         fullTransitionValue: 900,
@@ -89,6 +72,7 @@ class _FeedPageState extends State<FeedPage> {
         enableLoop: true,
         ignoreUserGestureWhileAnimating: true,
         itemBuilder: (context,index){
+          ArticleModel article = articles[index];
           return Scaffold(
             backgroundColor: index%2==0 ? BgColor : SuperLightShade,
             body: SingleChildScrollView(
@@ -100,7 +84,7 @@ class _FeedPageState extends State<FeedPage> {
                   children: [
                     Container(
                       height: MediaQuery.of(context).size.height*0.057,
-                      child: AutoSizeText(articles[index]['title'],
+                      child: AutoSizeText(article.title.toString(),
                         maxLines: 2,
                         style: TextStyle(
                           fontSize: 20,
@@ -109,19 +93,19 @@ class _FeedPageState extends State<FeedPage> {
                       ),
                     ),
                     SizedBox(height: 10,),
-                    articles[index]['author'] != null ? Row(children: [
+                    article.author != null ? Row(children: [
                       Text('Author: ', style: TextStyle(fontWeight: FontWeight.bold),),
-                      Text(articles[index]['author'])
+                      Text(article.author.toString())
                     ],) : SizedBox(height: 1,),
                     SizedBox(height: 10,),
-                    articles[index]['urlToImage'] != null ? Container(
+                    article.urlToImage != null ? Container(
                       margin: EdgeInsets.only(bottom: 10),
                       height: MediaQuery.of(context).size.height*0.24,
                       width: MediaQuery.of(context).size.width,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.network(
-                          articles[index]['urlToImage'],
+                          article.urlToImage.toString(),
                           fit: BoxFit.fill,
                           //loading widget while the image loads
                           loadingBuilder: (BuildContext context, Widget child,
@@ -155,18 +139,18 @@ class _FeedPageState extends State<FeedPage> {
                     ) : SizedBox(height: 1),
                     Row(children: [
                       Text('Published At: ', style: TextStyle(fontWeight: FontWeight.bold),),
-                      Text(articles[index]['publishedAt'])
+                      Text(article.publishedAt.toString())
                     ],),
                     SizedBox(height: 40,),
-                    Text(articles[index]['description'],
+                    Text(article.description.toString(),
                       style: TextStyle(
                         fontSize: 18,
                         fontStyle: FontStyle.italic,
                       ),),
                     SizedBox(height: 20,),
-                    Text(articles[index]['content'].toString().length <200 ?
-                    articles[index]['content'] :
-                    articles[index]['content'].toString().substring(0,200),
+                    Text(article.content.toString().length <200 ?
+                    article.content.toString() :
+                    article.content.toString().substring(0,200),
                       style: TextStyle(
                           fontSize: 17
                       ),),
@@ -176,7 +160,7 @@ class _FeedPageState extends State<FeedPage> {
                     ),),
                     TextButton(
                       onPressed: ()async {
-                        String url = '${articles[index]['url']}';
+                        String url = article.url.toString();
                         final uri = Uri.parse(url);
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
@@ -184,7 +168,7 @@ class _FeedPageState extends State<FeedPage> {
                           throw 'Could not launch $url';
                         }
                       },
-                      child: Text(articles[index]['url'],
+                      child: Text(article.url.toString(),
                         style: TextStyle(
                           color: Colors.blue[900],
                           decoration: TextDecoration.underline,
@@ -199,5 +183,7 @@ class _FeedPageState extends State<FeedPage> {
         },
       ) : SizedBox() ,
     );
+  },
+);
   }
 }

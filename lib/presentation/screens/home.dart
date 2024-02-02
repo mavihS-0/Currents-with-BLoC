@@ -6,14 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 import '../../bloc/news_data_bloc.dart';
-import '../../data/secret_key.dart';
-import 'details.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -28,7 +25,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: null));
   }
 
   @override
@@ -37,27 +33,14 @@ class _HomePageState extends State<HomePage> {
         child: BlocConsumer<NewsDataBloc, NewsDataState>(
   listener: (context, state) {
     // TODO: implement listener
-    if(state is NewsDataFetchFailure){
-      Get.snackbar("Error", state.error);
-    }
-    else if(state is NewsDataInitial){
-      context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: null));
-    }
-    else if(state is NewsDataLoading){
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context)=> Center(child: SpinKitThreeBounce(
-          size: 30,
-          color: DarkShade,
-        )),
-      );
-    }
+
   },
   builder: (context, state) {
-    if(state is! NewsDataFetchSuccess){
+    if(state is NewsDataFetchFailure){
       return Scaffold(
-        backgroundColor: BgColor,
+        body: Center(
+          child: Text('Error: ${state.error}'),
+        ),
       );
     }
     return Scaffold(
@@ -67,7 +50,7 @@ class _HomePageState extends State<HomePage> {
             //widget to reload the api service
             child: LiquidPullToRefresh(
               onRefresh: () async{
-                context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: null));
+                context.read<NewsDataBloc>().add(NewsDataRequested(search: 'null',country: 'null', screenIndex: 0));
                 },
               showChildOpacityTransition: false,
               backgroundColor: LightShade,
@@ -100,7 +83,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         onSubmitted: (value) {
                           //print(value);
-                          context.read().add<NewsDataRequested>(NewsDataRequested(search: value,country: null));
+                          context.read().add<NewsDataRequested>(NewsDataRequested(search: value,country: 'null', screenIndex: 0));
                         },
                       ),
                     ),
@@ -148,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                                   );
                                   String selectedCountry= await country.name;
                                   Get.back();
-                                  context.read().add<NewsDataRequested>(NewsDataRequested(search: null,country: selectedCountry));
+                                  context.read().add<NewsDataRequested>(NewsDataRequested(search: 'null',country: selectedCountry, screenIndex: 0));
                                 },
                                 countryListTheme: CountryListThemeData(
                                   borderRadius: BorderRadius.circular(30),
@@ -182,7 +165,7 @@ class _HomePageState extends State<HomePage> {
                       height: MediaQuery.of(context).size.height*0.68,
                       child: ListView.builder(
                         scrollDirection: Axis.vertical,
-                        itemCount: state.apiModel.totalResults,
+                        itemCount: (state as NewsDataFetchSuccess).apiModel.totalResults,
                         shrinkWrap: true,
                         itemBuilder: (_,i){
                           ArticleModel article = state.apiModel.articles[i];
@@ -218,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: Image.network(
-                                        article.urlToImage,
+                                        article.urlToImage.toString(),
                                         fit: BoxFit.fill,
                                         loadingBuilder: (BuildContext context, Widget child,
                                             ImageChunkEvent? loadingProgress) {
@@ -252,7 +235,7 @@ class _HomePageState extends State<HomePage> {
                                   SizedBox(height: 10,),
                                   Container(
                                     height: MediaQuery.of(context).size.height*0.06,
-                                    child: AutoSizeText(article.title,
+                                    child: AutoSizeText(article.title.toString(),
                                       //maxLines: 2,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -265,7 +248,7 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   Container(
                                     height: MediaQuery.of(context).size.height*0.1,
-                                    child: AutoSizeText(article.title,
+                                    child: AutoSizeText(article.title.toString(),
                                       //maxLines: 3,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -274,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   SizedBox(height: 20,),
                                   Container(
-                                    child: AutoSizeText(article.description,
+                                    child: AutoSizeText(article.description.toString(),
                                       style: TextStyle(
                                         fontSize: 15,
                                       ),),

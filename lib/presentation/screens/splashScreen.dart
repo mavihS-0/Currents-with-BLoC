@@ -1,4 +1,3 @@
-import 'package:currents_with_bloc/test.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:page_transition/page_transition.dart';
@@ -22,7 +21,7 @@ class _SplashPageState extends State<SplashPage> {
       splashTransition: SplashTransition.fadeTransition,
       pageTransitionType: PageTransitionType.fade,
       splashIconSize: 100,
-      nextScreen: TestScreen(),
+      nextScreen: NavBar(),
       duration: 1500,
     );
   }

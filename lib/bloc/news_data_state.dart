@@ -7,8 +7,11 @@ class NewsDataInitial extends NewsDataState {}
 
 class NewsDataFetchSuccess extends NewsDataState{
   final ApiModel apiModel;
+  final int screenIndex;
+  final String country;
+  final String search;
 
-  NewsDataFetchSuccess(this.apiModel);
+  NewsDataFetchSuccess({required this.apiModel, required this.screenIndex, required this.country, required this.search});
 }
 
 class NewsDataFetchFailure extends NewsDataState{
@@ -19,3 +22,4 @@ class NewsDataFetchFailure extends NewsDataState{
 }
 
 class NewsDataLoading extends NewsDataState{}
+
