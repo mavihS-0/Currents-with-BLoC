@@ -1,6 +1,6 @@
 # Currents (with BLoC)
 
-![App Logo](https://cdn.discordapp.com/attachments/1047424195803492383/1119976059023134800/logo.png)
+![App Logo](https://raw.githubusercontent.com/mavihS-0/Currents-with-BLoC/master/assets/logo.png)
 
 Elevate your news experience with our enhanced Flutter News App, now driven by Bloc for robust state management. Effortlessly navigate through a dynamic feed screen, swiping through curated articles. The revamped home screen offers a refined search bar and a country filter, empowering users to tailor their news exploration. Immerse yourself in personalized and seamless news browsing, keeping you informed with style and efficiency.
 
